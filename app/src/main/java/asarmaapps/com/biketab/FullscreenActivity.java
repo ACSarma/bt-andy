@@ -1,18 +1,31 @@
 package asarmaapps.com.biketab;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.TextView;
+
+import java.util.Formatter;
+import java.util.Locale;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-public class FullscreenActivity extends AppCompatActivity {
+public class FullscreenActivity extends AppCompatActivity implements GPSListener {
     /**
      * Whether or not the system UI should be auto-hidden after
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
@@ -83,6 +96,11 @@ public class FullscreenActivity extends AppCompatActivity {
         }
     };
 
+    //My Variables
+
+    private int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0;
+    private TextView speed;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -106,6 +124,39 @@ public class FullscreenActivity extends AppCompatActivity {
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
         findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+
+        speed = findViewById(R.id.speed);
+
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_CONTACTS)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        } else {
+            // Permission has already been granted
+
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+        }
+
+        this.updateSpeed(null);
     }
 
     @Override
@@ -159,5 +210,74 @@ public class FullscreenActivity extends AppCompatActivity {
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+    public void finish()
+    {
+        super.finish();
+        System.exit(0);
+    }
+
+    private void updateSpeed(SpeedLocation location) {
+        // TODO Auto-generated method stub
+        float nCurrentSpeed = 0;
+
+        if(location != null)
+        {
+            location.setUseMetricunits(this.useMetricUnits());
+            nCurrentSpeed = location.getSpeed();
+        }
+
+        Formatter fmt = new Formatter(new StringBuilder());
+        fmt.format(Locale.US, "%5.1f", nCurrentSpeed);
+        String strCurrentSpeed = fmt.toString();
+        strCurrentSpeed = strCurrentSpeed.replace(' ', '0');
+
+        String strUnits = "miles/hour";
+        if(this.useMetricUnits())
+        {
+            strUnits = "meters/second";
+        }
+
+        speed.setText(strCurrentSpeed + " " + strUnits);
+    }
+
+    private boolean useMetricUnits() {
+        // TODO Auto-generated method stub
+        return true;
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        // TODO Auto-generated method stub
+        if(location != null)
+        {
+            SpeedLocation myLocation = new SpeedLocation(location, this.useMetricUnits());
+            this.updateSpeed(myLocation);
+        }
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onGpsStatusChanged(int event) {
+        // TODO Auto-generated method stub
+
     }
 }
